@@ -2,6 +2,18 @@
 const topicSelect = document.getElementById('topicSelect');
 const responseDiv = document.getElementById('response');
 
+function renderMarkdownLinks(text) {
+  let output = text;
+
+  // Convert markdown links: [label](https://example.com)
+  output = output.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Convert plain URLs that are not already inside href attributes
+  output = output.replace(/(^|[\s(])((https?:\/\/[^\s<>"')]+))/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+
+  return output;
+}
+
 // Add change event listener to the select
 topicSelect.addEventListener('change', async () => {
   try {
@@ -22,8 +34,19 @@ topicSelect.addEventListener('change', async () => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
-
+        model: "gpt-4o-search-preview",
+        web_search_options: {
+          search_context_size: "medium", // optional: low|medium|high
+          user_location: {               // optional
+            type: "approximate",
+            approximate: {
+              country: "US",
+              city: "Chicago",
+              region: "Illinois",
+              timezone: "America/Chicago"
+            }
+          }
+        },
         messages: [
           {
             role: 'system',
@@ -45,7 +68,7 @@ topicSelect.addEventListener('change', async () => {
     const formattedText = text
       .split('\n\n')  // Split into paragraphs
       .filter(para => para.trim() !== '')  // Remove empty paragraphs
-      .map(para => `<p>${para}</p>`)  // Wrap in p tags
+      .map(para => `<p>${renderMarkdownLinks(para)}</p>`)  // Wrap in p tags and render links
       .join('');
     
     responseDiv.innerHTML = formattedText;
